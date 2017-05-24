@@ -182,7 +182,7 @@ public class MainActivity extends ActionBarActivity {
                         String encryptDate = "密钥：" + RSA.encryptByPublicKey(key, key_public);
 
                         // number.setText(encryptDate.length());
-                       // content.setText(encryptDate);
+                        // content.setText(encryptDate);
 
                         //发送
                         PendingIntent pi = PendingIntent.getActivity(MainActivity.this, 0, new Intent(), 0);
@@ -212,30 +212,8 @@ public class MainActivity extends ActionBarActivity {
         saveKey.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String key = content.getText().toString();
-                String num = number.getText().toString();
-                if (key.equals("")||num.equals("")) {
-                    Toast.makeText(MainActivity.this, "输入内容为空", Toast.LENGTH_LONG).show();
-                } else {
-                    //判断是否已经存在，存在则替换，不存在则插入
-                    String s = DatabaseOp.queryKey(num,"0",MainActivity.this);
-                    if(s.equals("Empty")) {
-                        //0标识公钥，1标识对称密钥
-                        long flag = DatabaseOp.insertKey(num, key, "0", MainActivity.this);
-                        if (flag == -1)
-                            Toast.makeText(MainActivity.this, "密钥保存失败", Toast.LENGTH_LONG).show();
-                        else
-                            Toast.makeText(MainActivity.this, "密钥保存成功", Toast.LENGTH_LONG).show();
-                    }
-                    else
-                    {
-                        long flag = DatabaseOp.updateKey(num, key, "0", MainActivity.this);
-                        if (flag == -1)
-                            Toast.makeText(MainActivity.this, "密钥保存失败", Toast.LENGTH_LONG).show();
-                        else
-                            Toast.makeText(MainActivity.this, "密钥保存成功", Toast.LENGTH_LONG).show();
-                    }
-                }
+                Intent intent = new Intent(MainActivity.this, CaptureActivity.class);
+                startActivityForResult(intent, 1);
             }
         });
 
@@ -286,37 +264,22 @@ public class MainActivity extends ActionBarActivity {
                     Toast.makeText(MainActivity.this, "输入电话号码为空", Toast.LENGTH_LONG).show();
                 else {
                     String key = DatabaseOp.queryKey(num, "0", MainActivity.this);
+                    boolean success = false;
+                    String filePath = getFileRoot(MainActivity.this) + File.separator
+                            + "qr_" + System.currentTimeMillis() + ".jpg";
+                    if (key.equals("Empty")) {
+                        Toast.makeText(MainActivity.this, "Key为空", Toast.LENGTH_SHORT).show();
+                    } else {
+                        success = QRCodeUtil.createQRImage(key, 1000, 1000, BitmapFactory.decodeResource(getResources(), R.mipmap.sms), filePath);
+                    }
+                    if (success) {
+                        Intent intent = new Intent(MainActivity.this, QR.class);
+                        intent.putExtra("dir", filePath);
+                        startActivity(intent);
+                    }
                     content.setText(key);
                 }
 
-            }
-        });
-        //生成二维码
-        findViewById(R.id.QRmake).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                boolean success = false;
-                String in = content.getText().toString();
-                String filePath = getFileRoot(MainActivity.this) + File.separator
-                        + "qr_" + System.currentTimeMillis() + ".jpg";
-                if (in.equals("")) {
-                    Toast.makeText(MainActivity.this, "输入不能为空", Toast.LENGTH_SHORT).show();
-                } else {
-                    success = QRCodeUtil.createQRImage(in, 1000, 1000, BitmapFactory.decodeResource(getResources(), R.mipmap.sms), filePath);
-                }
-                if (success) {
-                    Intent intent = new Intent(MainActivity.this, QR.class);
-                    intent.putExtra("dir", filePath);
-                    startActivity(intent);
-                }
-            }
-        });
-//扫描二维码
-        findViewById(R.id.QRscan).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(MainActivity.this, CaptureActivity.class);
-                startActivityForResult(intent, 1);
             }
         });
     }
@@ -336,8 +299,31 @@ public class MainActivity extends ActionBarActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        String result = data.getStringExtra("result");
-        content.setText(result);
+        String key = data.getStringExtra("result");
+        //content.setText(result);
+        String num = number.getText().toString();
+        if (key.equals("")||num.equals("")) {
+            Toast.makeText(MainActivity.this, "请输入要保存的联系人号码", Toast.LENGTH_LONG).show();
+        } else {
+            //判断是否已经存在，存在则替换，不存在则插入
+            String s = DatabaseOp.queryKey(num,"0",MainActivity.this);
+            if(s.equals("Empty")) {
+                //0标识公钥，1标识对称密钥
+                long flag = DatabaseOp.insertKey(num, key, "0", MainActivity.this);
+                if (flag == -1)
+                    Toast.makeText(MainActivity.this, "密钥保存失败", Toast.LENGTH_LONG).show();
+                else
+                    Toast.makeText(MainActivity.this, "密钥保存成功", Toast.LENGTH_LONG).show();
+            }
+            else
+            {
+                long flag = DatabaseOp.updateKey(num, key, "0", MainActivity.this);
+                if (flag == -1)
+                    Toast.makeText(MainActivity.this, "密钥保存失败", Toast.LENGTH_LONG).show();
+                else
+                    Toast.makeText(MainActivity.this, "密钥保存成功", Toast.LENGTH_LONG).show();
+            }
+        }
     }
 }
 
